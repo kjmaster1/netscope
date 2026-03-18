@@ -6,7 +6,9 @@ LDFLAGS = /nologo \
           wpcap.lib \
           Packet.lib \
           ws2_32.lib \
-          iphlpapi.lib
+          iphlpapi.lib \
+          crypt32.lib \
+          advapi32.lib
 
 SRCS    = src\main.c src\capture.c src\analyser.c src\server.c
 OUT     = netscope.exe
