@@ -355,7 +355,7 @@ const dot  = document.getElementById('statusDot');
 const text = document.getElementById('statusText');
 
 function connect() {
-    const ws = new WebSocket('ws://localhost:7681');
+    const ws = new WebSocket(`ws://${location.host}`);
 
     ws.onopen = () => {
         dot.classList.add('connected');

@@ -92,7 +92,7 @@ int main(void) {
     const char* device = interfaces[choice - 1].name;
     printf("\nOpening: %s\n",
            interfaces[choice - 1].description);
-    printf("Open http://localhost:7681 in your browser\n\n");
+    printf("Open http://localhost:%d in your browser\n\n", WS_PORT);
 
     char errbuf[PCAP_ERRBUF_SIZE];
     pcap_t* handle = open_interface(device, errbuf);

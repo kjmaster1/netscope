@@ -14,6 +14,7 @@
  * ========================================================================= */
 
 #define QUEUE_CAPACITY 1024
+#define HTTP_PORT  7681  /* same port, distinguished by Upgrade header */
 
 typedef struct {
     ParsedPacket packets[QUEUE_CAPACITY];

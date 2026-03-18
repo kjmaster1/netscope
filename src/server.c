@@ -123,6 +123,30 @@ static int sha1_base64(const char* input, char* out, int out_size) {
 }
 
 /* =========================================================================
+ * HTTP handler — serves the dashboard HTML
+ * ========================================================================= */
+
+#include "../include/dashboard_html.h"
+
+static int is_websocket_request(const char* buf) {
+    return strstr(buf, "Upgrade: websocket") != NULL ||
+           strstr(buf, "Upgrade: WebSocket") != NULL;
+}
+
+static void serve_http(SOCKET fd) {
+    /* Send HTTP/1.1 200 with the embedded dashboard HTML */
+    const char* header =
+        "HTTP/1.1 200 OK\r\n"
+        "Content-Type: text/html; charset=utf-8\r\n"
+        "Connection: close\r\n"
+        "\r\n";
+
+    send(fd, header, (int)strlen(header), 0);
+    send(fd, DASHBOARD_HTML, (int)strlen(DASHBOARD_HTML), 0);
+    closesocket(fd);
+}
+
+/* =========================================================================
  * WebSocket handshake
  * ========================================================================= */
 
@@ -282,21 +306,20 @@ static DWORD WINAPI server_thread(LPVOID param) {
                 }
             }
 
-            /* Data from existing clients? */
+            /* Data from existing clients */
             EnterCriticalSection(&srv->lock);
             for (int i = 0; i < srv->client_count; i++) {
                 WsClient* c = &srv->clients[i];
                 if (!FD_ISSET(c->fd, &read_fds)) continue;
 
                 int n = recv(c->fd,
-                             c->recv_buf + c->recv_len,
-                             sizeof(c->recv_buf) - c->recv_len - 1,
-                             0);
+                            c->recv_buf + c->recv_len,
+                            sizeof(c->recv_buf) - c->recv_len - 1,
+                            0);
+
                 if (n <= 0) {
-                    /* Client disconnected */
                     printf("[server] Client disconnected\n");
                     closesocket(c->fd);
-                    /* Remove from array */
                     memmove(&srv->clients[i],
                             &srv->clients[i + 1],
                             (srv->client_count - i - 1)
@@ -311,10 +334,21 @@ static DWORD WINAPI server_thread(LPVOID param) {
 
                 if (!c->handshake_done) {
                     if (strstr(c->recv_buf, "\r\n\r\n")) {
-                        ws_do_handshake(c);
-                        c->recv_len = 0;
-                        memset(c->recv_buf, 0,
-                               sizeof(c->recv_buf));
+                        if (is_websocket_request(c->recv_buf)) {
+                            ws_do_handshake(c);
+                            c->recv_len = 0;
+                            memset(c->recv_buf, 0,
+                                sizeof(c->recv_buf));
+                        } else {
+                            /* HTTP request — serve dashboard and close */
+                            serve_http(c->fd);
+                            memmove(&srv->clients[i],
+                                    &srv->clients[i + 1],
+                                    (srv->client_count - i - 1)
+                                        * sizeof(WsClient));
+                            srv->client_count--;
+                            i--;
+                        }
                     }
                 }
             }
