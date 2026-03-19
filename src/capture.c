@@ -79,3 +79,31 @@ void start_capture(pcap_t* handle, pcap_handler callback, void* user_data) {
 void stop_capture(pcap_t* handle) {
     pcap_breakloop(handle);
 }
+
+int apply_filter(pcap_t* handle, const char* filter_expr) {
+    struct bpf_program fp;
+
+    /*
+     * pcap_compile converts the human-readable filter expression
+     * into BPF bytecode. The last argument is the netmask —
+     * PCAP_NETMASK_UNKNOWN is fine for most filters.
+     */
+    if (pcap_compile(handle, &fp, filter_expr,
+                     1, PCAP_NETMASK_UNKNOWN) == -1) {
+        fprintf(stderr, "Invalid filter expression '%s': %s\n",
+                filter_expr, pcap_geterr(handle));
+        return 0;
+    }
+
+    /* Install the compiled filter on the handle */
+    if (pcap_setfilter(handle, &fp) == -1) {
+        fprintf(stderr, "Failed to set filter: %s\n",
+                pcap_geterr(handle));
+        pcap_freecode(&fp);
+        return 0;
+    }
+
+    pcap_freecode(&fp);
+    printf("Filter applied: %s\n", filter_expr);
+    return 1;
+}

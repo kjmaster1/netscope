@@ -42,7 +42,14 @@ static void packet_callback(u_char* user,
     }
 }
 
-int main(void) {
+int main(int argc, char* argv[]) {
+
+    /* Optional BPF filter expression as command line argument */
+    const char* filter_expr = NULL;
+    if (argc > 1) {
+        filter_expr = argv[1];
+    }
+
     /* Initialise Winsock before anything else */
     WSADATA wsa;
     if (WSAStartup(MAKEWORD(2, 2), &wsa) != 0) {
@@ -52,6 +59,12 @@ int main(void) {
 
     printf("netscope v0.1\n");
     printf("libpcap: %s\n\n", pcap_lib_version());
+    printf("Usage: netscope.exe [filter]\n");
+    printf("Examples:\n");
+    printf("  netscope.exe\n");
+    printf("  netscope.exe \"tcp port 443\"\n");
+    printf("  netscope.exe \"not port 5353\"\n");
+    printf("  netscope.exe \"host 8.8.8.8\"\n\n");
 
     /* Start WebSocket server */
     static PacketQueue queue;
@@ -103,6 +116,15 @@ int main(void) {
     if (!handle) {
         WSACleanup();
         return 1;
+    }
+
+    /* Apply BPF filter if provided */
+    if (filter_expr) {
+        if (!apply_filter(handle, filter_expr)) {
+            pcap_close(handle);
+            WSACleanup();
+            return 1;
+        }
     }
 
     printf("Capturing... (Ctrl+C to stop)\n\n");

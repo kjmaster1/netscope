@@ -44,3 +44,10 @@ void start_capture(pcap_t* handle, pcap_handler callback, void* user_data);
  * Stop an active capture loop.
  */
 void stop_capture(pcap_t* handle);
+
+/*
+ * Apply a BPF filter expression to an open capture handle.
+ * Example expressions: "tcp port 443", "not port 5353", "host 8.8.8.8"
+ * Returns 1 on success, 0 on failure.
+ */
+int apply_filter(pcap_t* handle, const char* filter_expr);
