@@ -415,26 +415,26 @@ function addFeedRow(pkt) {
         ICMP: 'col-icmp'
     }[pkt.proto] || 'col-other';
 
-    const src = pkt.src_port
-        ? `${pkt.src_ip}:${pkt.src_port}`
-        : pkt.src_ip;
-    const dst = pkt.dst_port
-        ? `${pkt.dst_ip}:${pkt.dst_port}`
-        : pkt.dst_ip;
+    /* Show hostname if different from IP, otherwise show IP */
+    const srcHost = pkt.src_host && pkt.src_host !== pkt.src_ip
+        ? pkt.src_host : pkt.src_ip;
+    const dstHost = pkt.dst_host && pkt.dst_host !== pkt.dst_ip
+        ? pkt.dst_host : pkt.dst_ip;
+
+    const src = pkt.src_port ? `${srcHost}:${pkt.src_port}` : srcHost;
+    const dst = pkt.dst_port ? `${dstHost}:${pkt.dst_port}` : dstHost;
 
     row.innerHTML = `
         <span class="col-num">${packetCount}</span>
         <span class="col-proto ${protoClass}">${pkt.proto}</span>
-        <span class="col-ip">${src}</span>
+        <span class="col-ip" title="${pkt.src_ip}">${src}</span>
         <span class="col-arrow">→</span>
-        <span class="col-ip">${dst}</span>
+        <span class="col-ip" title="${pkt.dst_ip}">${dst}</span>
         <span class="col-svc">${pkt.service || ''}</span>
         <span class="col-bytes">${pkt.length}b</span>
     `;
 
     feed.insertBefore(row, feed.firstChild);
-
-    // Keep feed bounded
     while (feed.children.length > MAX_FEED_ROWS) {
         feed.removeChild(feed.lastChild);
     }

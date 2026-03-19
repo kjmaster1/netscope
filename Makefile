@@ -10,7 +10,7 @@ LDFLAGS = /nologo \
           crypt32.lib \
           advapi32.lib
 
-SRCS    = src\main.c src\capture.c src\analyser.c src\server.c
+SRCS    = src\main.c src\capture.c src\analyser.c src\server.c src\dns_cache.c
 OUT     = netscope.exe
 
 all: $(OUT)

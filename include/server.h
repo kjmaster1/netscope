@@ -2,6 +2,7 @@
 
 #include <stdint.h>
 #include "../include/analyser.h"
+#include "../include/dns_cache.h"
 
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
@@ -51,10 +52,11 @@ typedef struct {
     PacketQueue* queue;
     CRITICAL_SECTION lock;
     volatile int running;
+    DnsCache* dns;
 } WsServer;
 
 /* Initialise and start the WebSocket server on a background thread */
-int  server_start(WsServer* srv, PacketQueue* queue);
+int  server_start(WsServer* srv, PacketQueue* queue, DnsCache* dns);
 
 /* Stop the server */
 void server_stop(WsServer* srv);

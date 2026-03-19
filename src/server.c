@@ -226,12 +226,20 @@ static void ws_send_text(SOCKET fd, const char* payload) {
  * ========================================================================= */
 
 static void packet_to_json(const ParsedPacket* pkt,
+                            WsServer* srv,
                             char* buf, int buf_len) {
     char src_ip[16], dst_ip[16];
     format_ip(pkt->src_ip, src_ip);
     format_ip(pkt->dst_ip, dst_ip);
 
-    /* Determine well-known port service name */
+    /* Resolve hostnames if DNS cache available */
+    const char* src_host = src_ip;
+    const char* dst_host = dst_ip;
+    if (srv->dns) {
+        src_host = dns_lookup(srv->dns, pkt->src_ip);
+        dst_host = dns_lookup(srv->dns, pkt->dst_ip);
+    }
+
     const char* service = "";
     uint16_t port = pkt->dst_port < pkt->src_port
                   ? pkt->dst_port : pkt->src_port;
@@ -247,16 +255,18 @@ static void packet_to_json(const ParsedPacket* pkt,
         "{"
         "\"proto\":\"%s\","
         "\"src_ip\":\"%s\","
+        "\"src_host\":\"%s\","
         "\"src_port\":%d,"
         "\"dst_ip\":\"%s\","
+        "\"dst_host\":\"%s\","
         "\"dst_port\":%d,"
         "\"length\":%d,"
         "\"service\":\"%s\","
         "\"ttl\":%d"
         "}",
         protocol_name(pkt->protocol),
-        src_ip, pkt->src_port,
-        dst_ip, pkt->dst_port,
+        src_ip, src_host, pkt->src_port,
+        dst_ip, dst_host, pkt->dst_port,
         pkt->packet_len,
         service,
         pkt->ttl
@@ -359,7 +369,7 @@ static DWORD WINAPI server_thread(LPVOID param) {
         ParsedPacket pkt;
         while (queue_pop(srv->queue, &pkt)) {
             char json[512];
-            packet_to_json(&pkt, json, sizeof(json));
+            packet_to_json(&pkt, srv, json, sizeof(json));
 
             EnterCriticalSection(&srv->lock);
             for (int i = 0; i < srv->client_count; i++) {
@@ -378,9 +388,10 @@ static DWORD WINAPI server_thread(LPVOID param) {
  * Public API
  * ========================================================================= */
 
-int server_start(WsServer* srv, PacketQueue* queue) {
+int server_start(WsServer* srv, PacketQueue* queue, DnsCache* dns) {
     memset(srv, 0, sizeof(WsServer));
     srv->queue   = queue;
+    srv->dns = dns;
     srv->running = 1;
     InitializeCriticalSection(&srv->lock);
 

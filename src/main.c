@@ -12,6 +12,7 @@
 #include "../include/capture.h"
 #include "../include/analyser.h"
 #include "../include/server.h"
+#include "../include/dns_cache.h"
 
 static int        packet_count = 0;
 static int        parsed_count = 0;
@@ -57,7 +58,10 @@ int main(void) {
     static WsServer    server;
     queue_init(&queue);
 
-    if (!server_start(&server, &queue)) {
+    static DnsCache dns;
+    dns_cache_init(&dns);
+
+    if (!server_start(&server, &queue, &dns)) {
         fprintf(stderr, "Failed to start WebSocket server\n");
         WSACleanup();
         return 1;
@@ -107,6 +111,7 @@ int main(void) {
     pcap_close(handle);
     server_stop(&server);
     queue_destroy(&queue);
+    dns_cache_destroy(&dns);
     WSACleanup();
 
     printf("\nTotal: %d captured, %d parsed.\n",
