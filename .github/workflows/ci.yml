@@ -20,12 +20,6 @@ jobs:
           Expand-Archive -Path npcap-sdk.zip -DestinationPath C:\npcap-sdk-1.16
         shell: pwsh
 
-      - name: Install Npcap
-        run: |
-          curl -L -o npcap-installer.exe https://npcap.com/dist/npcap-1.87.exe
-          Start-Process -FilePath npcap-installer.exe -ArgumentList '/S', '/winpcap_mode=yes' -Wait
-        shell: pwsh
-
       - name: Set up MSVC environment
         uses: ilammy/msvc-dev-cmd@v1
         with:
