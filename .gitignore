@@ -4,3 +4,4 @@
 *.ilk
 out/
 .vs/
+include\dashboard_html.h

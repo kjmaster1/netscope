@@ -1,0 +1,41 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Npcap SDK
+        run: |
+          curl -L -o npcap-sdk.zip https://npcap.com/dist/npcap-sdk-1.16.zip
+          Expand-Archive -Path npcap-sdk.zip -DestinationPath C:\npcap-sdk-1.16
+        shell: pwsh
+
+      - name: Install Npcap
+        run: |
+          curl -L -o npcap-installer.exe https://npcap.com/dist/npcap-1.87.exe
+          Start-Process -FilePath npcap-installer.exe -ArgumentList '/S', '/winpcap_mode=yes' -Wait
+        shell: pwsh
+
+      - name: Set up MSVC environment
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Build
+        run: nmake
+        shell: cmd
